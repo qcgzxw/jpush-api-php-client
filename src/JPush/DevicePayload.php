@@ -167,7 +167,7 @@ class DevicePayload extends Payload{
         return $this->delete($url);
     }
 
-    public function getAliasDevices($alias, $platform = null) {
+    public function getAliasDevices($alias, $platform = null, $newFormat = false) {
         if (!is_string($alias)) {
             throw new InvalidArgumentException("Invalid alias");
         }
@@ -183,6 +183,9 @@ class DevicePayload extends Payload{
             } else {
                 throw new InvalidArgumentException("Invalid platform");
             }
+        }
+        if ($newFormat) {
+            $params['new_params'] = 'true';
         }
         return $this->get($url, $params);
     }
