@@ -203,7 +203,7 @@ class DevicePayload extends Payload{
             }
         }
         if ($newFormat) {
-            $params['new_params'] = 'true';
+            $params['new_format'] = 'true';
         }
         return $this->get($url, $params);
     }
