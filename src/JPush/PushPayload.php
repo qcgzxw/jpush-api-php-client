@@ -2,11 +2,9 @@
 namespace JPush;
 use InvalidArgumentException;
 
-class PushPayload {
+class PushPayload extends Payload{
 
-    private static $EFFECTIVE_DEVICE_TYPES = array('ios', 'android', 'winphone');
-
-    private $client;
+    private static $EFFECTIVE_DEVICE_TYPES = ["android", "ios", "quickapp", "hmos"];
     private $url;
 
     private $cid;
@@ -36,14 +34,15 @@ class PushPayload {
      * @param $client JPush
      */
     function __construct($client) {
-        $this->client = $client;
+        parent::__construct($client);
         $url = $this->client->is_group() ? 'grouppush' : 'push';
         $this->url = $this->client->makeURL('push') . $url;
     }
 
     public function getCid($count = 1, $type = 'push') {
-        $url = $this->client->makeURL('push') . 'push/cid?count=' . $count . '&type=' . $type;
-        return Http::get($this->client, $url);
+        $url = $this->client->makeURL('push') . 'push/cid';
+        $params = ['count' => $count, 'type' => $type];
+        return $this->get($url, $params);
     }
 
     public function setCid($cid) {
@@ -52,13 +51,12 @@ class PushPayload {
     }
 
     public function setPlatform($platform) {
-        # $required_keys = array('all', 'android', 'ios', 'winphone');
         if (is_string($platform)) {
             $ptf = strtolower($platform);
             if ('all' === $ptf) {
                 $this->platform = 'all';
             } elseif (in_array($ptf, self::$EFFECTIVE_DEVICE_TYPES)) {
-                $this->platform = array($ptf);
+                $this->platform = [$ptf];
             }
         } elseif (is_array($platform)) {
             $ptf = array_map('strtolower', $platform);
@@ -111,7 +109,7 @@ class PushPayload {
 
     private function updateAudience($key, $value, $name) {
         if (is_null($this->$key)) {
-            $this->$key = array();
+            $this->$key = [];
         }
 
         if (is_array($value)) {
@@ -143,7 +141,7 @@ class PushPayload {
     }
 
     public function addWinPhoneNotification($alert=null, $title=null, $_open_page=null, $extras=null) {
-        $winPhone = array();
+        $winPhone = [];
 
         if (!is_null($alert)) {
             if (!is_string($alert)) {
@@ -188,7 +186,7 @@ class PushPayload {
     }
 
     public function setSms($delay_time, $temp_id, array $temp_para = []) {
-        $sms = array();
+        $sms = [];
         $sms['temp_id'] = $temp_id;
         $sms['delay_time'] = ($delay_time === 0 || (is_int($delay_time) && $delay_time > 0 && $delay_time <= 86400)) ? $delay_time : 0;
 
@@ -201,7 +199,7 @@ class PushPayload {
     }
 
     public function build() {
-        $payload = array();
+        $payload = [];
 
         // validate platform
         if (is_null($this->platform)) {
@@ -214,7 +212,7 @@ class PushPayload {
         }
 
         // validate audience
-        $audience = array();
+        $audience = [];
         if (!is_null($this->tags)) {
             $audience["tag"] = $this->tags;
         }
@@ -248,7 +246,7 @@ class PushPayload {
 
 
         // validate notification
-        $notification = array();
+        $notification = [];
 
         if (!is_null($this->notificationAlert)) {
             $notification['alert'] = $this->notificationAlert;
@@ -332,12 +330,12 @@ class PushPayload {
     }
 
     public function send() {
-        return Http::post($this->client, $this->url, $this->build());
+        return $this->post($this->url, $this->build());
     }
 
     public function validate() {
-        $url = $this->client->makeURL('push') . '/push/validate';
-        return Http::post($this->client, $url, $this->build());
+        $url = $this->client->makeURL('push') . 'push/validate';
+        return $this->post($url, $this->build());
     }
 
     private function generateSendno() {
@@ -345,8 +343,8 @@ class PushPayload {
     }
 
     # new methods
-    public function iosNotification($alert = '', array $notification = array()) {
-        $ios = array();
+    public function iosNotification($alert = '', array $notification = []) {
+        $ios = [];
         $ios['alert'] = (is_string($alert) || is_array($alert)) ? $alert : '';
         if (!empty($notification)) {
             if (isset($notification['sound'])) {
@@ -389,8 +387,8 @@ class PushPayload {
         return $this;
     }
 
-    public function androidNotification($alert = '', array $notification = array()) {
-        $android = array();
+    public function androidNotification($alert = '', array $notification = []) {
+        $android = [];
         $android['alert'] = is_string($alert) ? $alert : '';
         if (!empty($notification)) {
             if (isset($notification['builder_id'])) {
@@ -452,8 +450,8 @@ class PushPayload {
      * Voip in notification
      * could add any custom key/value into it
      */
-    public function voip (array $extras = array()) {
-        $voip = array();
+    public function voip (array $extras = []) {
+        $voip = [];
         if(!empty($extras)) {
             foreach($extras as $key=>$val) {
                 $voip[$key] = $val;
@@ -464,10 +462,9 @@ class PushPayload {
         return $this;
     }
 
-    public function message($msg_content, array $msg = array()) {
-        # $required_keys = array('title', 'content_type', 'extras');
+    public function message($msg_content, array $msg = []) {
         if (is_string($msg_content)) {
-            $message = array();
+            $message = [];
             $message['msg_content'] = $msg_content;
             if (!empty($msg)) {
                 if (isset($msg['title']) && is_string($msg['title'])) {
@@ -485,9 +482,8 @@ class PushPayload {
         return $this;
     }
 
-    public function options(array $opts = array()) {
-        # $required_keys = array('sendno', 'time_to_live', 'override_msg_id', 'apns_production', 'apns_collapse_id', 'big_push_duration');
-        $options = array();
+    public function options(array $opts = []) {
+        $options = [];
         if (isset($opts['sendno'])) {
             $options['sendno'] = $opts['sendno'];
         } else {
@@ -516,7 +512,7 @@ class PushPayload {
         return $this;
     }
 
-    public function custom (array $extras = array()) {
+    public function custom (array $extras = []) {
         if(!empty($extras)) {
             $this->custom=$extras;        
         }
@@ -527,7 +523,7 @@ class PushPayload {
     ############# 以下函数已过期，不推荐使用，仅作为兼容接口存在 #########################
     ###############################################################################
     public function addIosNotification($alert=null, $sound=null, $badge=null, $content_available=null, $category=null, $extras=null) {
-        $ios = array();
+        $ios = [];
 
         if (!is_null($alert)) {
             if (!is_string($alert) && !is_array($alert)) {
@@ -596,7 +592,7 @@ class PushPayload {
     }
 
     public function addAndroidNotification($alert=null, $title=null, $builderId=null, $extras=null) {
-        $android = array();
+        $android = [];
 
         if (!is_null($alert)) {
             if (!is_string($alert)) {
@@ -639,7 +635,7 @@ class PushPayload {
     }
 
     public function setMessage($msg_content, $title=null, $content_type=null, $extras=null) {
-        $message = array();
+        $message = [];
 
         if (is_null($msg_content) || !is_string($msg_content)) {
             throw new InvalidArgumentException("Invalid message content");
@@ -679,8 +675,8 @@ class PushPayload {
         return $this;
     }
 
-    public function setOptions($sendno=null, $time_to_live=null, $override_msg_id=null, $apns_production=null, $big_push_duration=null) {
-        $options = array();
+    public function setOptions($sendno=null, $time_to_live=null, $override_msg_id=null, $apns_production=null, $big_push_duration=null, $third_party_channel=null) {
+        $options = [];
 
         if (!is_null($sendno)) {
             if (!is_int($sendno)) {
@@ -730,16 +726,16 @@ class PushPayload {
      https://docs.jiguang.cn/jpush/server/push/rest_api_v3_push/#vip
     */
     public function batchPushByRegid(array $singlePayloads) {
-        $body = array(
-            "pushlist"=>array()
-        );
-        $response = $this -> getCid(count($singlePayloads), 'push');
+        $body = ["pushlist" => []];
+        $response = $this->getCid(count($singlePayloads), 'push');
         $cidlist = $response['body']['cidlist'];
+
         foreach ($cidlist as $i => $cid) {
             $body["pushlist"][$cid] = $singlePayloads[$i];
         }
+
         $url = $this->client->makeURL('push') . 'push/batch/regid/single';
-        return Http::post($this->client, $url, $body);
+        return $this->post($url, $body);
     }
 
     /*
@@ -747,15 +743,15 @@ class PushPayload {
      https://docs.jiguang.cn/jpush/server/push/rest_api_v3_push/#vip
     */
     public function batchPushByAlias(array $singlePayloads) {
-        $body = array(
-            "pushlist"=>array()
-        );
-        $response = $this -> getCid(count($singlePayloads), 'push');
+        $body = ["pushlist" => []];
+        $response = $this->getCid(count($singlePayloads), 'push');
         $cidlist = $response['body']['cidlist'];
+
         foreach ($cidlist as $i => $cid) {
             $body["pushlist"][$cid] = $singlePayloads[$i];
         }
+
         $url = $this->client->makeURL('push') . 'push/batch/alias/single';
-        return Http::post($this->client, $url, $body);
+        return $this->post($url, $body);
     }
 }

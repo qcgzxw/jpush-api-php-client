@@ -61,7 +61,7 @@ final class Http {
         ));
 
         $output = curl_exec($ch);
-        $response = array();
+        $response = [];
         $errorCode = curl_errno($ch);
 
         // $msg = '';
@@ -97,7 +97,7 @@ final class Http {
             $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             $header_text = substr($output, 0, $header_size);
             $body = substr($output, $header_size);
-            $headers = array();
+            $headers = [];
             foreach (explode("\r\n", $header_text) as $i => $line) {
                 if (!empty($line)) {
                     if ($i === 0) {
@@ -119,7 +119,7 @@ final class Http {
     public static function processResp($response) {
         $data = json_decode($response['body'], true);
         if ($response['http_code'] === 200) {
-            $result = array();
+            $result = [];
             $result['body'] = $data;
             $result['http_code'] = $response['http_code'];
             $result['headers'] = $response['headers'];

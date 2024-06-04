@@ -5,7 +5,7 @@ class APIRequestException extends JPushException {
     private $http_code;
     private $headers;
 
-    private static $expected_keys = array('code', 'message');
+    private static $expected_keys = ['code', 'message'];
 
     function __construct($response){
         $this->http_code = $response['http_code'];
