@@ -2,32 +2,30 @@
 namespace JPush;
 use InvalidArgumentException;
 
-class DevicePayload {
-    private $client;
-
+class DevicePayload extends Payload{
     /**
      * DevicePayload constructor.
      * @param $client JPush
      */
     public function __construct($client)
     {
-        $this->client = $client;
+        parent::__construct($client);
     }
 
     public function getDevices($registrationId) {
         $url = $this->client->makeURL('device') . $registrationId;
-        return Http::get($this->client, $url);
+        return $this->get($url);
     }
 
     public function updateAlias($registration_id, $alias) {
         return $this->updateDevice($registration_id, $alias);
     }
     public function addTags($registration_id, $tags) {
-        $tags = is_array($tags) ? $tags : array($tags);
+        $tags = is_array($tags) ? $tags : [$tags];
         return $this->updateDevice($registration_id, null, null, $tags);
     }
     public function removeTags($registration_id, $tags) {
-        $tags = is_array($tags) ? $tags : array($tags);
+        $tags = is_array($tags) ? $tags : [$tags];
         return $this->updateDevice($registration_id, null, null, null, $tags);
     }
     public function updateMoblie($registration_id, $mobile) {
@@ -36,16 +34,16 @@ class DevicePayload {
 
     public function clearMobile($registrationId) {
         $url = $this->client->makeURL('device') . $registrationId;
-        return Http::post($this->client, $url, ['mobile' => '']);
+        return $this->post($url, ['mobile' => '']);
     }
 
     public function clearTags($registrationId) {
         $url = $this->client->makeURL('device') . $registrationId;
-        return Http::post($this->client, $url, ['tags' => '']);
+        return $this->post($url, ['tags' => '']);
     }
 
     public function updateDevice($registrationId, $alias = null, $mobile = null, $addTags = null, $removeTags = null) {
-        $payload = array();
+        $payload = [];
         if (!is_string($registrationId)) {
             throw new InvalidArgumentException('Invalid registration_id');
         }
@@ -75,7 +73,7 @@ class DevicePayload {
             }
         }
 
-        $tags = array();
+        $tags = [];
 
         if (!$addTagsIsNull) {
             if (is_array($addTags)) {
@@ -98,12 +96,12 @@ class DevicePayload {
         }
 
         $url = $this->client->makeURL('device') . $registrationId;
-        return Http::post($this->client, $url, $payload);
+        return $this->post($url, $payload);
     }
 
     public function getTags() {
         $url = $this->client->makeURL('tag');
-        return Http::get($this->client, $url);
+        return $this->get($url);
     }
 
     public function isDeviceInTag($registrationId, $tag) {
@@ -115,15 +113,15 @@ class DevicePayload {
             throw new InvalidArgumentException("Invalid tag");
         }
         $url = $this->client->makeURL('tag') . $tag . '/registration_ids/' . $registrationId;
-        return Http::get($this->client, $url);
+        return $this->get($url);
     }
 
     public function addDevicesToTag($tag, $addDevices) {
-        $device = is_array($addDevices) ? $addDevices : array($addDevices);
+        $device = is_array($addDevices) ? $addDevices : [$addDevices];
         return $this->updateTag($tag, $device, null);
     }
     public function removeDevicesFromTag($tag, $removeDevices) {
-        $device = is_array($removeDevices) ? $removeDevices : array($removeDevices);
+        $device = is_array($removeDevices) ? $removeDevices : [$removeDevices];
         return $this->updateTag($tag, null, $device);
     }
     public function updateTag($tag, $addDevices = null, $removeDevices = null) {
@@ -138,7 +136,7 @@ class DevicePayload {
             throw new InvalidArgumentException("Either or both addDevices and removeDevices must be set.");
         }
 
-        $registrationId = array();
+        $registrationId = [];
 
         if (!$addDevicesIsNull) {
             if (is_array($addDevices)) {
@@ -157,8 +155,8 @@ class DevicePayload {
         }
 
         $url = $this->client->makeURL('tag') . $tag;
-        $payload = array('registration_ids'=>$registrationId);
-        return Http::post($this->client, $url, $payload);
+        $payload = ['registration_ids'=>$registrationId];
+        return $this->post($url, $payload);
     }
 
     public function deleteTag($tag) {
@@ -166,7 +164,7 @@ class DevicePayload {
             throw new InvalidArgumentException("Invalid tag");
         }
         $url = $this->client->makeURL('tag') . $tag;
-        return Http::delete($this->client, $url);
+        return $this->delete($url);
     }
 
     public function getAliasDevices($alias, $platform = null) {
@@ -176,24 +174,17 @@ class DevicePayload {
 
         $url = $this->client->makeURL('alias') . $alias;
 
+        $params = [];
         if (!is_null($platform)) {
             if (is_array($platform)) {
-                $isFirst = true;
-                foreach($platform as $item) {
-                    if ($isFirst) {
-                        $url = $url . '?platform=' . $item;
-                        $isFirst = false;
-                    } else {
-                        $url = $url . ',' . $item;
-                    }
-                }
+                $params['platform'] = implode(',', $platform);
             } else if (is_string($platform)) {
-                $url = $url . '?platform=' . $platform;
+                $params['platform'] = $platform;
             } else {
                 throw new InvalidArgumentException("Invalid platform");
             }
         }
-        return Http::get($this->client, $url);
+        return $this->get($url, $params);
     }
 
     public function deleteAlias($alias) {
@@ -201,7 +192,7 @@ class DevicePayload {
             throw new InvalidArgumentException("Invalid alias");
         }
         $url = $this->client->makeURL('alias') . $alias;
-        return Http::delete($this->client, $url);
+        return $this->delete($url);
     }
 
     public function getDevicesStatus($registrationId) {
@@ -213,12 +204,12 @@ class DevicePayload {
             $registrationId = explode(',', $registrationId);
         }
 
-        $payload = array();
+        $payload = [];
         if (count($registrationId) <= 0) {
             throw new InvalidArgumentException('Invalid registration_id');
         }
         $payload['registration_ids'] = $registrationId;
         $url = $this->client->makeURL('device') . 'status';
-        return Http::post($this->client, $url, $payload);
+        return $this->post($url, $payload);
     }
 }
